@@ -94,14 +94,16 @@ void setup() {
   } else {
     Serial.println("error");
   }
+  delay(1000);
 
   Serial.print("setting vl53l0x ... ");
-  _vl53LoxConnected = _mpu.begin();
+  _vl53LoxConnected = _lox.begin();
   if (_vl53LoxConnected) {
     Serial.println("done");
   } else {
     Serial.println("error");
   }
+  delay(1000);
 }
 
 void loop() {
@@ -109,16 +111,17 @@ void loop() {
     touchValues[i] = touchRead(touchPins[i]);
   }
 
-  for(auto i = 0; i < NUMBER_OF_TOUCHES; i++){
-    Serial.print(touchValues[i]);
-    Serial.print(" ");
-  }
-  Serial.println("");
+  // for(auto i = 0; i < NUMBER_OF_TOUCHES; i++){
+  //   Serial.print(touchValues[i]);
+  //   Serial.print(" ");
+  // }
+  // Serial.println("");
+
 
   if (_mpu6050Connected) {
     sensors_event_t a, g, temp;
     _mpu.getEvent(&a, &g, &temp);
-    Serial.print(a.acceleration.x);
+    // Serial.print(a.acceleration.x);
     // esp_err_t result =
     if (shouldSendControlChangeMessage(CC_MPU6050_ACCELERATION_X)) {
       ESP_NOW_MIDI.sendControlChange(CC_MPU6050_ACCELERATION_X, map(a.acceleration.x, -10, 10, 0, 127), 1);
@@ -139,7 +142,6 @@ void loop() {
       ESP_NOW_MIDI.sendControlChange(CC_MPU6050_ORIENTATION_Z, map(g.orientation.z, -5000, 5000, 0, 127), 1);
     }
   }
-  return;
 
   if (_vl53LoxConnected) {
     VL53L0X_RangingMeasurementData_t measure;
