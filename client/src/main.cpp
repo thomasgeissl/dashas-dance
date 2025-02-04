@@ -189,8 +189,6 @@ void loop() {
         ESP_NOW_MIDI.sendControlChange(CC_VL53L0X, map(distance, 0, 1000, 127, 0), 1);
         _vl53l0xLastTime = time;
       }
-
-
     } else {
       // Serial.println(" out of range ");
     }
