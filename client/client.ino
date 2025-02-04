@@ -6,6 +6,7 @@
 #include <Adafruit_MPU6050.h>
 #include <Adafruit_VL53L0X.h>
 #include <Adafruit_Sensor.h>
+#include <BH1750.h>
 #include <Wire.h>
 
 
@@ -22,8 +23,21 @@ int touchValues[NUMBER_OF_TOUCHES];
 
 bool _mpu6050Connected = false;
 bool _vl53LoxConnected = false;
+bool _bh1750Connected = false;
+
+unsigned long _bh1750LastTime = 0;
+unsigned long _mpu6050LastTime = 0;
+unsigned long _vl53l0xLastTime = 0;
+
+BH1750 _bh1750;
+
 
 int _soloCC = -1;
+
+VL53L0X_RangingMeasurementData_t _distanceMeasure;
+sensors_event_t a, g, _temperature;
+
+
 
 
 void customOnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
@@ -85,7 +99,7 @@ void setup() {
 
 
   Serial.println("setting up sensors");
-  Serial.print("setting mpu 6050 ... ");
+  Serial.print("setting up mpu 6050 ... ");
   _mpu6050Connected = _mpu.begin();
   if (_mpu6050Connected) {
     _mpu.setAccelerometerRange(MPU6050_RANGE_8_G);
@@ -94,61 +108,91 @@ void setup() {
   } else {
     Serial.println("error");
   }
+  delay(1000);
 
-  Serial.print("setting vl53l0x ... ");
-  _vl53LoxConnected = _mpu.begin();
+  Serial.print("setting up vl53l0x ... ");
+  _vl53LoxConnected = _lox.begin();
   if (_vl53LoxConnected) {
     Serial.println("done");
   } else {
     Serial.println("error");
   }
+  delay(1000);
+
+
+  Serial.print("setting up bh1750 ... ");
+  _bh1750Connected = _bh1750.begin();
+  if (_bh1750Connected) {
+    Serial.println("done");
+  } else {
+    Serial.println("error");
+  }
+  delay(1000);
 }
 
 void loop() {
+  auto time = millis();
   for (auto i = 0; i < NUMBER_OF_TOUCHES; i++) {
     touchValues[i] = touchRead(touchPins[i]);
   }
 
-  for(auto i = 0; i < NUMBER_OF_TOUCHES; i++){
-    Serial.print(touchValues[i]);
-    Serial.print(" ");
-  }
-  Serial.println("");
+  // for(auto i = 0; i < NUMBER_OF_TOUCHES; i++){
+  //   Serial.print(touchValues[i]);
+  //   Serial.print(" ");
+  // }
+  // Serial.println("");
 
-  if (_mpu6050Connected) {
-    sensors_event_t a, g, temp;
-    _mpu.getEvent(&a, &g, &temp);
-    Serial.print(a.acceleration.x);
+  if (_bh1750Connected && (time > _bh1750LastTime + RATE_BH1730)) {
+    float lux = _bh1750.readLightLevel();
+    lux = min((int)(lux), 1000);
+    ESP_NOW_MIDI.sendControlChange(CC_BH1730, map(lux, 0, 1000, 0, 127), 1);
+    _bh1750LastTime = time;
+  }
+
+  if (_mpu6050Connected && (time > _bh1750LastTime + RATE_BH1730)) {
+    _mpu.getEvent(&a, &g, &_temperature);
     // esp_err_t result =
     if (shouldSendControlChangeMessage(CC_MPU6050_ACCELERATION_X)) {
-      ESP_NOW_MIDI.sendControlChange(CC_MPU6050_ACCELERATION_X, map(a.acceleration.x, -10, 10, 0, 127), 1);
+      ESP_NOW_MIDI.sendControlChange(CC_MPU6050_ACCELERATION_X, map(a.acceleration.x + a.acceleration.y + a.acceleration.z, -30, 30, 0, 127), 1);
     }
-    if (shouldSendControlChangeMessage(CC_MPU6050_ACCELERATION_Y)) {
-      ESP_NOW_MIDI.sendControlChange(CC_MPU6050_ACCELERATION_Y, map(a.acceleration.y, -10, 10, 0, 127), 1);
-    }
-    if (shouldSendControlChangeMessage(CC_MPU6050_ACCELERATION_Z)) {
-      ESP_NOW_MIDI.sendControlChange(CC_MPU6050_ACCELERATION_Z, map(a.acceleration.z, -10, 10, 0, 127), 1);
-    }
-    if (shouldSendControlChangeMessage(CC_MPU6050_ORIENTATION_X)) {
-      ESP_NOW_MIDI.sendControlChange(CC_MPU6050_ORIENTATION_X, map(g.orientation.x, -5000, 5000, 0, 127), 1);
-    }
-    if (shouldSendControlChangeMessage(CC_MPU6050_ORIENTATION_Y)) {
-      ESP_NOW_MIDI.sendControlChange(CC_MPU6050_ORIENTATION_Y, map(g.orientation.y, -5000, 5000, 0, 127), 1);
-    }
-    if (shouldSendControlChangeMessage(CC_MPU6050_ORIENTATION_Z)) {
-      ESP_NOW_MIDI.sendControlChange(CC_MPU6050_ORIENTATION_Z, map(g.orientation.z, -5000, 5000, 0, 127), 1);
-    }
-  }
-  return;
+    _mpu6050LastTime = time;
 
-  if (_vl53LoxConnected) {
-    VL53L0X_RangingMeasurementData_t measure;
-    _lox.rangingTest(&measure, false);  // pass in 'true' to get debug data printout!
-    if (measure.RangeStatus != 4) {     // phase failures have incorrect data
-      Serial.print("Distance (mm): ");
-      Serial.println(measure.RangeMilliMeter);
+
+
+    // if (shouldSendControlChangeMessage(CC_MPU6050_ACCELERATION_X)) {
+    //   ESP_NOW_MIDI.sendControlChange(CC_MPU6050_ACCELERATION_X, map(a.acceleration.x, -10, 10, 0, 127), 1);
+    // }
+    // if (shouldSendControlChangeMessage(CC_MPU6050_ACCELERATION_Y)) {
+    //   ESP_NOW_MIDI.sendControlChange(CC_MPU6050_ACCELERATION_Y, map(a.acceleration.y, -10, 10, 0, 127), 1);
+    // }
+    // if (shouldSendControlChangeMessage(CC_MPU6050_ACCELERATION_Z)) {
+    //   ESP_NOW_MIDI.sendControlChange(CC_MPU6050_ACCELERATION_Z, map(a.acceleration.z, -10, 10, 0, 127), 1);
+    // }
+    // if (shouldSendControlChangeMessage(CC_MPU6050_ORIENTATION_X)) {
+    //   ESP_NOW_MIDI.sendControlChange(CC_MPU6050_ORIENTATION_X, map(g.orientation.x, -5000, 5000, 0, 127), 1);
+    // }
+    // if (shouldSendControlChangeMessage(CC_MPU6050_ORIENTATION_Y)) {
+    //   ESP_NOW_MIDI.sendControlChange(CC_MPU6050_ORIENTATION_Y, map(g.orientation.y, -5000, 5000, 0, 127), 1);
+    // }
+    // if (shouldSendControlChangeMessage(CC_MPU6050_ORIENTATION_Z)) {
+    //   ESP_NOW_MIDI.sendControlChange(CC_MPU6050_ORIENTATION_Z, map(g.orientation.z, -5000, 5000, 0, 127), 1);
+    // }
+  }
+
+  if (_vl53LoxConnected && (time > _bh1750LastTime + RATE_BH1730)) {
+
+    _lox.rangingTest(&_distanceMeasure, false);  // pass in 'true' to get debug data printout!
+
+    if (_distanceMeasure.RangeStatus != 4) {
+      auto distance = _distanceMeasure.RangeMilliMeter;
+      if (distance < 1000) {
+        ESP_NOW_MIDI.sendControlChange(CC_VL53L0X, map(distance, 0, 1000, 127, 0), 1);
+        _vl53l0xLastTime = time;
+      }
+
+
     } else {
-      Serial.println(" out of range ");
+      // Serial.println(" out of range ");
     }
   }
 }
