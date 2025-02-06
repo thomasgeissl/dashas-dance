@@ -10,6 +10,6 @@
 #define CC_BH1730 80
 #define CC_VL53L0X 90
 
-#define RATE_BH1730 10
+#define RATE_BH1750 10
 #define NUMBER_OF_TOUCHES 9
 int touchPins[NUMBER_OF_TOUCHES] = { 13, 12, 14, 27, 33, 32, 15, 2, 4 };

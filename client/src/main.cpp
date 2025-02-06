@@ -142,14 +142,14 @@ void loop() {
   // }
   // Serial.println("");
 
-  if (_bh1750Connected && (time > _bh1750LastTime + RATE_BH1730)) {
+  if (_bh1750Connected && (time > _bh1750LastTime + RATE_BH1750)) {
     float lux = _bh1750.readLightLevel();
     lux = min((int)(lux), 1000);
     ESP_NOW_MIDI.sendControlChange(CC_BH1730, map(lux, 0, 1000, 0, 127), 1);
     _bh1750LastTime = time;
   }
 
-  if (_mpu6050Connected && (time > _bh1750LastTime + RATE_BH1730)) {
+  if (_mpu6050Connected && (time > _mpu6050LastTime + RATE_BH1750)) {
     _mpu.getEvent(&a, &g, &_temperature);
     // esp_err_t result =
     if (shouldSendControlChangeMessage(CC_MPU6050_ACCELERATION_X)) {
@@ -179,8 +179,7 @@ void loop() {
     // }
   }
 
-  if (_vl53LoxConnected && (time > _bh1750LastTime + RATE_BH1730)) {
-
+  if (_vl53LoxConnected && (time > _vl53l0xLastTime + RATE_BH1750)) {
     _lox.rangingTest(&_distanceMeasure, false);  // pass in 'true' to get debug data printout!
 
     if (_distanceMeasure.RangeStatus != 4) {
