@@ -57,7 +57,7 @@ void ofApp::update() {
     }
 	_midiOut.sendControlChange(MIDI_CHANNEL, MIDI_CONTROLLER_MOVEMENT, ofMap(getNormalizedMovement(0, 0, _kinect.getWidth(), _kinect.getHeight()), 0, 1, 0, 127));
 
-
+	ofLogNotice() << getNearestPoint(0, 0, _kinect.getWidth(), _kinect.getHeight());
 }
 
 void ofApp::draw() {
@@ -121,6 +121,25 @@ float ofApp::getNormalizedMovement(int x, int y, int width, int height) {
 
     // Normalize to range [0.0, 1.0]
     return movementSum / (255.0f * pixelCount);
+}
+int ofApp::getNearestPoint(int x, int y, int width, int height) {
+    // Clamp bounds to image size
+    x = ofClamp(x, 0, _kinect.getWidth() - 1);
+    y = ofClamp(y, 0, _kinect.getHeight() - 1);
+    width = ofClamp(width, 1, _kinect.getWidth() - x);
+    height = ofClamp(height, 1, _kinect.getHeight() - y);
+
+    int minDistance = std::numeric_limits<int>::max();
+    for (int j = y; j < y + height; ++j) {
+        for (int i = x; i < x + width; ++i) {
+            int dist = _kinect.getDistanceAt(i, j);
+            if (dist > 0 && dist < minDistance) {
+                minDistance = dist;
+            }
+        }
+    }
+
+    return (minDistance == std::numeric_limits<int>::max()) ? 0 : minDistance;
 }
 
 

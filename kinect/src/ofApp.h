@@ -23,6 +23,7 @@ public:
 
 	void drawPointCloud();
 	float getNormalizedMovement(int x, int y, int width, int height);
+	int getNearestPoint(int x, int y, int width, int height);
 
 	
 	
