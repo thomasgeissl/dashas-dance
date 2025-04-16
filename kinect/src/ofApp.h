@@ -5,6 +5,8 @@
 #include "ofxKinect.h"
 #include "ofxMidi.h"
 
+#include "ofxImGui.h"
+
 class ofApp : public ofBaseApp {
 public:
 	
@@ -25,6 +27,8 @@ public:
 	float getNormalizedMovement(int x, int y, int width, int height);
 	int getNearestPoint(int x, int y, int width, int height);
 
+	void onTiltAngleChange(int & value);
+
 	
 	
 	ofEasyCam _easyCam;
@@ -35,5 +39,13 @@ public:
 	ofxCvGrayscaleImage _depthImage;
 	ofxCvGrayscaleImage _lastDepthImage;
 	ofxCvGrayscaleImage _diffDepthImage;
-	int _angle;
+	ofxCvGrayscaleImage _contourDepthImage;
+	ofxCvContourFinder _contourFinder; 
+
+	ofParameter<int> _tiltAngle;
+
+
+	// gui
+	ofxImGui::Gui _gui;
+
 };

@@ -1,5 +1,7 @@
 #include "./config.h"
 #include "ofApp.h"
+#include "ImHelpers.h"
+
 
 void ofApp::setup()
 {
@@ -27,20 +29,25 @@ void ofApp::setup()
 
 
 	// zero the tilt on startup
-	_angle = 0;
-	_kinect.setCameraTiltAngle(_angle);
+	_tiltAngle.set("tiltAngle", 0, 0, 50);
+	_tiltAngle.addListener(this, &ofApp::onTiltAngleChange);
+	_kinect.setCameraTiltAngle(_tiltAngle);
 	_colorImage.allocate(_kinect.width, _kinect.height);
 	_depthImage.allocate(_kinect.width, _kinect.height);
 	_lastDepthImage.allocate(_kinect.width, _kinect.height);
 	_diffDepthImage.allocate(_kinect.width, _kinect.height);
-
-
+	_contourDepthImage.allocate(_kinect.width, _kinect.height);
 
 	// connect
 	_midiOut.listOutPorts();
 	// midiOut.openPort(0); // by number
 	// midiOut.openPort("IAC Driver Pure Data In"); // by name
 	_midiOut.openVirtualPort("dd-kinect"); // open a virtual port
+
+
+	//gui
+	_gui.setup(nullptr, true, ImGuiConfigFlags_ViewportsEnable );
+
 }
 
 void ofApp::update() {
@@ -50,14 +57,23 @@ void ofApp::update() {
 		_colorImage.flagImageChanged();
 		_depthImage.setFromPixels(_kinect.getDepthPixels());
 		_depthImage.flagImageChanged();
+		_contourDepthImage.setFromPixels(_kinect.getDepthPixels());
+        _contourDepthImage.flagImageChanged();
 		_diffDepthImage.absDiff(_depthImage, _lastDepthImage);
 		_diffDepthImage.flagImageChanged();
 		_diffDepthImage.threshold(10); // adjust threshold value as needed
+
+		_contourDepthImage.threshold(100);
+		_contourFinder.findContours(_depthImage, 100, (_kinect.width * _kinect.height) / 3, 10, false, true);
+
+
+
 		_lastDepthImage = _depthImage;
     }
 	_midiOut.sendControlChange(MIDI_CHANNEL, MIDI_CONTROLLER_MOVEMENT, ofMap(getNormalizedMovement(0, 0, _kinect.getWidth(), _kinect.getHeight()), 0, 1, 0, 127));
 
-	ofLogNotice() << getNearestPoint(0, 0, _kinect.getWidth(), _kinect.getHeight());
+	// ofLogNotice() << getNearestPoint(0, 0, _kinect.getWidth(), _kinect.getHeight());
+	ofLogNotice() << _contourFinder.blobs.size();
 }
 
 void ofApp::draw() {
@@ -71,6 +87,26 @@ void ofApp::draw() {
     ofPopMatrix();
 	_depthImage.draw(0, height, width, height);
 	_diffDepthImage.draw(width, height, width, height);
+	_contourFinder.draw(2*width, height, width, height);
+
+
+	auto mainSettings = ofxImGui::Settings();
+	_gui.begin();
+    
+    // Show the ImGui test window. Most of the sample code is in ImGui::ShowDemoWindow()
+    // ImGui::SetNextWindowPos( ofVec2f( ofGetWindowPositionX(), ofGetWindowPositionY()), ImGuiCond_Once);
+    // ImGui::SetNextWindowSize( ofVec2f(ofGetWidth(), ofGetHeight()), ImGuiCond_Once);
+
+	static bool bCollapse = false;
+	if (ofxImGui::BeginWindow("settings", mainSettings, ImGuiWindowFlags_NoCollapse, &bCollapse)){
+    	// ImGui::ShowDemoWindow();
+		ofxImGui::AddStepper(_tiltAngle);
+		ofxImGui::EndWindow(mainSettings);
+	}
+
+
+    //required to call this at end
+    _gui.end();
 }
 
 
@@ -154,7 +190,7 @@ void ofApp::keyPressed(int key)
 	switch (key)
 	{
 	case 'o':
-		_kinect.setCameraTiltAngle(_angle); // go back to prev tilt
+		_kinect.setCameraTiltAngle(_tiltAngle); // go back to prev tilt
 		_kinect.open();
 		break;
 
@@ -164,17 +200,17 @@ void ofApp::keyPressed(int key)
 		break;
 
 	case OF_KEY_UP:
-		_angle++;
-		if (_angle > 30)
-			_angle = 30;
-		_kinect.setCameraTiltAngle(_angle);
+		_tiltAngle++;
+		if (_tiltAngle > 30)
+			_tiltAngle = 30;
+		_kinect.setCameraTiltAngle(_tiltAngle);
 		break;
 
 	case OF_KEY_DOWN:
-		_angle--;
-		if (_angle < -30)
-			_angle = -30;
-		_kinect.setCameraTiltAngle(_angle);
+		_tiltAngle--;
+		if (_tiltAngle < -30)
+		_tiltAngle = -30;
+		_kinect.setCameraTiltAngle(_tiltAngle);
 		break;
 	}
 }
@@ -185,3 +221,8 @@ void ofApp::mouseReleased(int x, int y, int button) {}
 void ofApp::mouseEntered(int x, int y) {}
 void ofApp::mouseExited(int x, int y) {}
 void ofApp::windowResized(int w, int h) {}
+
+void ofApp::onTiltAngleChange(int & value){
+	_kinect.setCameraTiltAngle(_tiltAngle);
+}
+	
