@@ -40,6 +40,10 @@ void ofApp::setup()
 
 	// zero the tilt on startup
 	_tiltAngle.set("tiltAngle", 0, 0, 50);
+    _movementEnabled.set("movement enabled", true);
+    _leftMovementEnabled.set("leftMovement enabled", true);
+    _rightMovementEnabled.set("rightMovement enabled", true);
+
 	_tiltAngle.addListener(this, &ofApp::onTiltAngleChange);
 	_kinect.setCameraTiltAngle(_tiltAngle);
 	_colorImage.allocate(_kinect.width, _kinect.height);
@@ -80,7 +84,15 @@ void ofApp::update() {
 
 		_lastDepthImage = _depthImage;
     }
-	_midiOut.sendControlChange(MIDI_CHANNEL, MIDI_CONTROLLER_MOVEMENT, ofMap(getNormalizedMovement(0, 0, _kinect.getWidth(), _kinect.getHeight()), 0, 1, 0, 127));
+    if(_movementEnabled){
+        _midiOut.sendControlChange(MIDI_CHANNEL, MIDI_CONTROLLER_MOVEMENT, ofMap(getNormalizedMovement(0, 0, _kinect.getWidth(), _kinect.getHeight()), 0, 1, 0, 127));
+    }
+    if(_leftMovementEnabled){
+        _midiOut.sendControlChange(MIDI_CHANNEL, MIDI_CONTROLLER_MOVEMENT+1, ofMap(getNormalizedMovement(0, 0, _kinect.getWidth()/2, _kinect.getHeight()), 0, 1, 0, 127));
+    }
+    if(_rightMovementEnabled){
+        _midiOut.sendControlChange(MIDI_CHANNEL, MIDI_CONTROLLER_MOVEMENT+2, ofMap(getNormalizedMovement(_kinect.getWidth()/2, 0, _kinect.getWidth()/2, _kinect.getHeight()), 0, 1, 0, 127));
+    }
 
 	// ofLogNotice() << getNearestPoint(0, 0, _kinect.getWidth(), _kinect.getHeight());
 	ofLogNotice() << _contourFinder.blobs.size();
@@ -111,6 +123,8 @@ void ofApp::draw() {
 	if (ofxImGui::BeginWindow("settings", mainSettings, ImGuiWindowFlags_NoCollapse, &bCollapse)){
     	// ImGui::ShowDemoWindow();
 		ofxImGui::AddStepper(_tiltAngle);
+        ofxImGui::AddStepper(_tiltAngle);
+
 		ofxImGui::EndWindow(mainSettings);
 	}
 
@@ -166,7 +180,7 @@ float ofApp::getNormalizedMovement(int x, int y, int width, int height) {
     }
 
     // Normalize to range [0.0, 1.0]
-    return movementSum / (255.0f * pixelCount);
+    return movementSum / (255.0f * pixelCount/10);
 }
 int ofApp::getNearestPoint(int x, int y, int width, int height) {
     // Clamp bounds to image size
@@ -222,7 +236,20 @@ void ofApp::keyPressed(int key)
 		_tiltAngle = -30;
 		_kinect.setCameraTiltAngle(_tiltAngle);
 		break;
-	}
+case 'a':
+    _movementEnabled = !_movementEnabled;
+    break;
+    
+case 's':
+    _leftMovementEnabled = !_leftMovementEnabled;
+    break;
+
+    
+case 'd':
+    _rightMovementEnabled = !_rightMovementEnabled;
+    break;
+    }
+
 }
 
 void ofApp::mouseDragged(int x, int y, int button) {}

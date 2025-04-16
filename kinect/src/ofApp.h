@@ -43,6 +43,11 @@ public:
 	ofxCvContourFinder _contourFinder; 
 
 	ofParameter<int> _tiltAngle;
+    ofParameter<bool> _movementEnabled;
+    ofParameter<bool> _leftMovementEnabled;
+    ofParameter<bool> _rightMovementEnabled;
+
+
 
 
 	// gui
