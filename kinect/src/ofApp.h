@@ -47,5 +47,4 @@ public:
 
 	// gui
 	ofxImGui::Gui _gui;
-
 };

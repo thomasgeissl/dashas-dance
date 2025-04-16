@@ -7,6 +7,16 @@ void ofApp::setup()
 {
 	ofSetFrameRate(60);
 	ofSetLogLevel(OF_LOG_VERBOSE);
+
+	ofFile file("config.json");
+	ofJson config;
+	if(file.exists()){
+		file >> config;
+	}
+
+
+
+
 	// enable depth->video image calibration
 	_kinect.setRegistration(true);
 	_kinect.init();
@@ -94,8 +104,8 @@ void ofApp::draw() {
 	_gui.begin();
     
     // Show the ImGui test window. Most of the sample code is in ImGui::ShowDemoWindow()
-    // ImGui::SetNextWindowPos( ofVec2f( ofGetWindowPositionX(), ofGetWindowPositionY()), ImGuiCond_Once);
-    // ImGui::SetNextWindowSize( ofVec2f(ofGetWidth(), ofGetHeight()), ImGuiCond_Once);
+    ImGui::SetNextWindowPos( ofVec2f( ofGetWindowPositionX(), ofGetWindowPositionY()), ImGuiCond_Once);
+    ImGui::SetNextWindowSize( ofVec2f(ofGetWidth(), ofGetHeight()), ImGuiCond_Once);
 
 	static bool bCollapse = false;
 	if (ofxImGui::BeginWindow("settings", mainSettings, ImGuiWindowFlags_NoCollapse, &bCollapse)){
